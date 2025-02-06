@@ -42,3 +42,56 @@ library(tidyverse)
 print{"Hello world"}
 
 ```
+
+```{r}
+number <- 2
+#the left-facing arrow, called the assignment operator, assigns something to variables
+```
+
+Ch. 10 - If you write the formula 'number*number', it will spit out the answer for those variables assigned by the assignment operator
+
+Ch. 13 - CSV data is short for Comma Separated Values data, which is data that has a comma between each column of data.
+
+```{r}
+
+umd_courses <- read_rds("umd_courses.rds")
+#the first part - umd_courses - is the name of a variable.
+##a variable is just a ma,e to refer to some more complex thing. In this case, that is the data we're importing into R that will be stored as a dataframe, which is one way R stores data.
+###variable names are one word all lower case (or two or more words connected by an underscore)
+####you can end a variable with a number, but you can't start one with a number
+
+##read_rds() is a function that only works when we've loaded the tidyverse
+##a function is a bit of computer code that takes in information and follows a series of pre-determined steps and spits it back out
+
+#inside of the read_rds() function, we've put the name of the file we want to load
+##things we put inside of a function to customize what the function does are called arguments
+
+##in R Studio's environment window, the rows are called observations and columns are called variables
+```
+
+```{r}
+|>
+  #this operator is called the pipe operator
+  ##keyboard shortcut is cmd-shift-m 
+  
+%>%
+  # this does the same thing as the operator above
+  
+data |> function
+
+#this basically means, take your data set and do this specific action to it
+```
+
+```{r}
+n()
+#a function that counts the number of rows or records in each group; n is a common symbol used to denote a count of something
+
+arrange()
+#it arranges data in order
+##by default, it's in ascending order - smallest to largest
+```
+
+##Q1 = functions like a notebook
+##Q2 = environment
+##Q3 = console, where code is going to run
+##Q4 = stores our files on our computer
