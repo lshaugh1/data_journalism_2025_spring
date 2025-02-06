@@ -75,24 +75,37 @@ okaloosa_charges |>
 
 **Q4** Why do you think there are so many charges identified in **A3** that are tied for the least common? Hint: You can't answer this question with code.
 
-**A4** They are rare instances of crimes that have happened less than twice?
+**A4** They are rare instances of crimes that have happened less than twice.
 
 **Q5** Which prosecutor has prosecuted the most charges against homeless people? Is the top prosecutor related to any famous Floridians?
 
 **A5**
 
 ```{r}
-
+okaloosa_charges |>
+  group_by(prosecutor) |>
+  summarise(
+    prosecutor_charge_count = n()
+  ) |>
+  arrange(desc(prosecutor_charge_count))
 ```
 
 
 
 **Q6** Which judge has overseen the most cases involving homeless people? Hint: Cases and charges are not the same thing.
 
-**A6**
+**A6** 
 
 ```{r}
-
+okaloosa_charges |>
+  distinct(judge, case_number) |>
+  group_by(judge) |>
+  summarise(
+    cases=n_distinct(case_number)
+  ) |>
+  arrange(desc(cases))
+  
+  
 ```
 
 
@@ -101,14 +114,13 @@ okaloosa_charges |>
 **A7**
 
 ```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
+okaloosa_charges |>
+  group_by(prosecutor) |>
+  summarise(
+    count_prosecutor_charge_count = n(),
+    max_defendant = max(defendant)
+  ) |>
+  arrange(desc(count_prosecutor_charge_count))
 ```
 
 **Q8** We need to create a dataframe that will help us when we are reporting on the ground. Building off our work so far, we need a dataframe that includes the name of every homeless person who was charged with a crime and some important counts about their interactions with the criminal justice system. Create a dataframe that includes the name of each homeless person, the number of charges they have faced, the number of cases they have been involved in, how many dollars they have been assessed in fines, the average fine imposed on them and the median fine imposed upon them. Then sort the data frame so the person with the most charges is at the top. 
@@ -116,9 +128,18 @@ okaloosa_charges |>
 **A8**
 
 ```{r}
-
+okaloosa_charges |>
+  group_by(defendant) |>
+  summarise(
+    arrest_charge = n(),
+    count_statutes= n(),
+    total_assessed = sum(total_assessed),
+    mean_total_assessed=mean(total_assessed),
+    median_total_assessed=median(total_assessed)
+  ) |>
+  arrange(desc(count_statutes))
 ```
 
 **Q9** Please describe a short reporting plan for how you would use the data you have generated in **A8** to report on the criminal justice system in Okaloosa County, Florida. Who are the people we should talk to? What more should we do with our data analysis to be certain we know what the story is?
 
-**A9**
+**A9** We should speak to the people with the most charges. I would probably look into why is there such a big difference between Richard and Kenneth's charges even though Richard only has 18 more arrest charges than Kenneth? Also, why is the system so polluted and how is there not any regulation regarding homelessness about the maximum amount of charges?
