@@ -95,3 +95,42 @@ arrange()
 ##Q2 = environment
 ##Q3 = console, where code is going to run
 ##Q4 = stores our files on our computer
+
+Pre-Lab 2 Notes
+------------------
+#Filtering creates a subset of the data based on criteria 
+##Filtering works with rows -- when we filter, we get fewer rows back than we start with
+
+#Selecting simply returns only the fields named
+##Selecting works with columns. You will have the same number of records when you are done, but fewer columns of data to work with
+
+## == equal to
+## != not equal to
+## > greater than
+## >= greater than or equal to
+##Be careful: = is not == and = is not "equal to". = is an assignment operator in most languages - how things get named
+
+#AND is &
+# OR is |
+## OR is additive, AND is restrictive
+
+```{r}
+# better ordering?
+primary_24 |>
+  select(office_name, office_district, candidate_name, party, county_name, election_day, votes) |>
+  mutate(
+  percent_election_day = (election_day/votes)*100
+)  |> 
+  arrange(desc(percent_election_day))
+```
+##the code above arranged the percentage of election day votes to descending order
+
+##`str_to_upper` converts character colums into all uppercase
+
+## If you don't assign the results of a mutate() function to a variable, those changes aren't permanent.
+
+##**Filtering creates a subset of the data based on criteria**. All records where the amount is greater than 150,000. All records that match "College Park". Something like that. **Filtering works with rows -- when we filter, we get fewer rows back than we start with.**
+
+**Selecting simply returns only the fields named**. So if you only want to see city and amount, you select those fields. When you look at your data again, you'll have two columns. If you try to use one of your columns that you had before you used select, you'll get an error. **Selecting works with columns. You will have the same number of records when you are done, but fewer columns of data to work with.**
+
+
