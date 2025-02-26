@@ -37,32 +37,84 @@ Take a look at the data, getting familiar with what it contains. Most of the col
 
 **Q1** How many voters appear to be *new* registrants since July 21, when President Joe Biden announced he would leave the race, based on the information above? Create a dataframe to hold the only those voters. Which counties have seen the most? Take a look at county population figures here and compare the two in your answer: https://worldpopulationreview.com/us-counties/maryland.
 
-**A1**
-
 ```{r}
+new_voters <- md_voters_2024 |> filter(STATE_REGISTRATION_DATE >= '2024-07-21') 
+    
 ```
+```{r}
+new_voters |>
+  group_by(COUNTY) |>
+  summarise(
+    count_county = n()
+  ) |>
+  arrange(desc(count_county))
+```
+
+
+**A1** 17,106 new voters (I counted the rows), Montgomery, Baltimore City & Baltimore County saw the highest numbers of registration.
+
+
 
 **Q2** A better question is whether the new voters you found in Q1 are an outlier compared to other weeks this year. Using the original dataframe with 2024 registrants, use `mutate()` and lubridate to produce week numbers from the COUNTY_REGISTRATION_DATE (Lubridate has a function that turns a date into a week number. Use that to answer this question). Save that to the original dataframe. Then calculate how many voters are in each week. Describe the distribution of voters groups in a sentence - are the weeks from July 21-August 7 different from the rest, and if so, how?
 
-**A2**
+**A2** When looking at the data, more people registered to vote  in the weeks later on in the year, like (28, 30, 31,etc.) which was around the time/leading up to when Biden dropped out of the race. 
 
 ```{r}
+md_voters_2024 <- md_voters_2024 |>
+  mutate(week_number=week(COUNTY_REGISTRATION_DATE))
+```
+```{r}
+md_voters_2024 |>
+  group_by(week_number) |>
+  summarise(
+    total_voter_count=n()
+  ) |>
+  arrange(desc(total_voter_count))
 ```
 
 **Q3** Using lubridate, show which month saw the largest number of registrations. Does the answer help shed more light on Q2?
-**A3** 
+**A3** July saw the largest number of registrations, which makes sense since that was when Biden dropped out.
 
 ```{r}
-
+md_voters_2024 <- md_voters_2024 |>
+  mutate(month=month(COUNTY_REGISTRATION_DATE))
+```
+```{r}
+md_voters_2024 |>
+  group_by(month) |>
+  summarise(
+    count_month=n()
+  ) |>
+  arrange(desc(count_month))
 ```
 
 **Q4** Maryland has, officially, five regions: https://www.visitmaryland.org/article/maryland-regions. Modify the original dataframe again to add a `region` column based on the `COUNTY` value using case_when. Are you going to have to do this for every Maryland county plus Baltimore City? Yes, you are. Which regions and parties account for the most new voters?
 
-**A4** 
+**A4** Democratic and unaffiliated voters in the Capital region recorded the two highest numbers of registration. The Central region's democratic and unaffiliated voters came in third and fourth.
 
 ```{r}
+# ChatGPT recommended I use %in% instead so the counties would be spelled right. 
+
+md_voters_2024 <- md_voters_2024 |> 
+  mutate(region = case_when(
+    COUNTY %in% c("Allegany", "Garrett", "Washington") ~ "Western",
+    COUNTY %in% c("Baltimore", "Baltimore City", "Carroll", "Harford", "Howard") ~ "Central",
+    COUNTY %in% c("Montgomery", "Prince George's") ~ "Capital",
+    COUNTY %in% c("Anne Arundel", "Calvert", "Charles", "St. Mary's") ~ "Southern",
+    COUNTY %in% c("Caroline", "Cecil", "Dorchester", "Kent", "Queen Anne's", "Somerset", "Talbot", "Wicomico", "Worcester") ~ "Eastern Shore",
+    )
+  )
 ```
+```{r}
+md_voters_2024 |>
+  group_by(region, PARTY) |>
+  summarise(
+    total_region=n()
+  ) |>
+  arrange(desc(total_region))
+```
+
 
 **Q5** What's an additional question you could ask of this data?
 
-**A5** 
+**A5** What percentage of new voters are 18-21? 22-25? I'd want to know more about the age demographic with the highest number of new voters.
