@@ -133,4 +133,37 @@ primary_24 |>
 
 **Selecting simply returns only the fields named**. So if you only want to see city and amount, you select those fields. When you look at your data again, you'll have two columns. If you try to use one of your columns that you had before you used select, you'll get an error. **Selecting works with columns. You will have the same number of records when you are done, but fewer columns of data to work with.**
 
+**Mutate - using data you have to answer a new question
 
+** cleaning function
+cleaned_md_grants_loans <- md_grants_loans |>
+  clean_names() |> 
+  rename(source = grantor) |> 
+  mutate(source = str_to_upper(source), grantee = str_to_upper(grantee), description = str_to_upper(description)) |> 
+  distinct() |>
+  mutate(zip5 = str_sub(zip_code, start=1L, end=5L))
+
+
+# display the cleaned dataset
+cleaned_md_grants_loans
+##allows us to clean up columns stored as character strings
+
+**the rename function allows us to remove that x in front of line number column
+##cleaned_conowingo <- conowingo |>
+  clean_names() |> 
+  rename(linenumber = x1_linenumber)
+
+# display the cleaned dataset
+cleaned_conowingo
+
+**gets rid of duplicates in datasets
+# cleaning function
+cleaned_conowingo <- conowingo |>
+  clean_names() |> 
+  rename(linenumber = x1_linenumber) |> 
+  mutate(amount = as.numeric(amount)) |> 
+  distinct()
+  
+
+# display the cleaned dataset
+cleaned_conowingo
