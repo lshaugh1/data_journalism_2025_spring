@@ -44,13 +44,12 @@ new_voters <- read_csv("data/new_voters.csv")
 Next join the Harris donations to the voter data. Remember, people's names are common, __so you'll want to use name columns and address information__. You'll need to figure out which columns to use from both dataframes. The new_voters data has both a single Address column and various parts of the address, such as HouseNumber. Make a plan for picking your join columns - try out some combinations - and save the results to a new dataframe.
 
 ```{r}
-combined <- harris_donations_combined |>
+join <- harris_donations_combined |>
   inner_join(new_voters, join_by(
     address_one == "Address",
     last_name == "LastName",
     first_name == "FirstName",
     city == "ResidentialCity"
-    
   ))
 
 harris_donations_combined |>
@@ -74,28 +73,47 @@ A1. I used the columns I did because it was very unlikely that two people would 
 
 Q2. Based on your join, how many donations to Harris have come from people who registered this year? How many unique people does that represent, and which donors have given the largest _number_ of donations since July 20? 
 
-A2.Brandyn Best gave the largest number of donations with 5 donations. 59 unique people with __ donations. 
+A2. The data represents 59 unique people with 77 donations coming from people who registered this year. Brandyn Best gave the largest number of donations with 5 donations. Rilwan Johnson and Miriam Marton follow closely behind with 4 donations a piece.
 
 ```{r} 
-combined |> 
+join |> 
   filter(StateRegistrationDate > as.Date("2024-07-20")) |>
   group_by(first_name, last_name, address_one, city) |>
-  summarise(count = n()) |>
-arrange(desc(count))
-
+  summarise(count = n())
+  new_voters_filtered <- new_voters |>
+  filter(StateRegistrationDate >=as.Date("2024-01-01"))
 ```
 
 Q3. What are the party and gender breakdowns of those donors? How many donations has Harris gotten from non-Democrats?
 
-A3. 30 donations.
+A3. Democrat (DEM), Republican (REP), NLM , UNA, and other. The genders consist of Female, Male, and NA. 30 donations came from non-Democrats.
 
 ```{r}
-  summarise(count = n())
+party_gender <- join |>
+  group_by(Gender) |>
+  summarise(
+    count = n(),
+    
+  )
+
+party <- join |>
+  group_by(Party) |>
+  summarise(
+    count = n(),
+    
+  )
+
+party_gender <- join |>
+  group_by(Party, Gender) |>
+  summarise(
+    count = n()
+  )
+
 ```
 
 Q4. Choose your own adventure: I want you to come up with a question you could ask of one of the dataframes we've created for this lab. It could involve just the new voters, or the donors or the joined dataframe, but it cannot be a variation of a previous question (so, for example, you can't ask, "How many Republicans have given to Harris"). First write the question and then try to answer it by writing code. If you're not sure of the exact code, try googling (or ask me for advice) but, at a minimum, describe what you think you'd have to do to answer it and what the results would look like. That can help.
 
-A4: How many total Democrats gave money to Harris?
+A4: How many total Republicans gave money to Harris?
 
 ```{r}
 party_gender <- join |>
