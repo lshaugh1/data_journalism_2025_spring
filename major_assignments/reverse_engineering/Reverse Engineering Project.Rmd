@@ -1,0 +1,244 @@
+---
+title: "Reverse Engineering Project"
+author: "Mira, Laura , Katelynn "
+date: "March 15, 2025"
+output:
+  html_document:
+    theme: cerulean
+    highlight: pygments
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction 
+
+In this notebook, we are reverse engineering the story, [Millions in out-of-state donations help fuel high-profile Maryland Democratic governor candidates](https://cnsmaryland.org/2022/03/03/millions-in-out-of-state-donations-help-fuel-high-profile-maryland-democratic-governor-candidates/)
+
+## Load libraries
+
+Loading required libraries for this analysis.
+
+```{r echo=FALSE, message=FALSE}
+options(scipen=999)
+library(tidyverse)
+library(lubridate)
+
+```
+
+## Load and Cleaning Data
+
+In this section, describe the source of the data, write a basic data dictionary for data you are working with, and discuss any caveats or issues you discovered working with this data. 
+
+**DATA QUESTIONS FOR RYAN** Hi, we were unable to find the contribution data for the Rush Baker campaign through the website, so instead of loading all seven candidates we only have six. 
+I'm not sure the data for all of them is even correct because some were like 'friends of candidate' and some were just normal 'candidate for governor/maryland', some even had both. Should we include both if applicable and what should we do about the Baker data?
+
+```{r}
+# Load required data
+
+moore <- read_csv("data/wesmoore.csv")
+
+gansler <- read_csv("data/douggansler.csv")
+
+king <- read_csv("data/johnking.csv")
+
+schulz <- read_csv("data/kellyschulz.csv")
+
+perez <- read_csv("data/tomperez.csv")
+
+franchot <- read_csv("data/peterfranchot.csv")
+
+# Path to data should be loaded from folder "data" i.e. read_csv("data/name_of_data.csv")
+
+# Clean required data and prepare for analysis if needed. 
+
+```
+
+## Sentences to Engineer
+In this notebook, we are reverse engineering five sentences from the story.
+
+### Sentence 1
+
+* **Sentence text**: Moore, a U.S. Army veteran and bestselling author, built a campaign war chest that included over $2.3 million in out-of-state contributions.
+* **Analysis summary**: First, I would like to complain about finding the data on the Maryland Campaign contribution database. That website is hell. OK. We were able to confirm the finding. Out of Wes Moore's 4,127,418 dollars in campaign funding, according to his campaign's 2021 Annual report, 2387822.72 dollars came from out of state. Less than $2 million was actually from mMryland contributors. In our code that differentiates Maryland from Out of State contributions, there is an NA, and I'm not sure why. It must be from the mutate(case_when...) code, but I consulted chatGPT to get the state out of the address. Even with that issue, we were still able to re-engineer this first sentence, and NA only accounts for about 570 dollars
+
+```{r}
+###cleaning column names
+cleaned_moore <- moore |>
+clean_names() |>
+glimpse()
+```
+```{r}
+###checking data: moore did receive over $4 million in campaign contribs this report.
+cleaned_moore |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+```{r}
+###mutating state out of contributor address data
+states_moore <- cleaned_moore |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))
+### mutate code from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+states_moore |>
+head()
+
+```
+```{r}
+###adding up contrib amounts per state 
+state_contribs_moore <- states_moore |>
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs)) |>
+  
+  glimpse()
+
+```
+```{r}
+state_contribs_moore |>
+  ### comparing in state contribution amount to out-of-state
+  mutate( contrib_location = case_when(
+      contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland",
+    ))|>
+  ### this is where the NA problem is. unclear how to fix
+
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )
+
+```
+
+
+
+
+
+
+
+
+### Sentence 2
+
+* **Sentence text**: John B. King, former secretary of Education under President Barack Obama, raised $2.2 million in campaign funding last year. Only 11%, just under $240,000, came from Maryland donors. King raised over $534,000 in New York alone.
+
+
+* **Analysis summary**: Yes, we were able to replicate this finding. King raised exactly 2,199,015	for his campaign. 534478.44 came from New York state. Only 238,527	came from Maryland-- that is about 11% of his total. The N/A problem here persists because this is the same code that I used for the Wes Moore dataframe.
+
+
+```{r}
+###cleaning column names
+cleaned_king <- king |>
+clean_names() |>
+glimpse()
+```
+```{r}
+###checking data: moore did receive over $4 million in campaign contribs this report.
+cleaned_king |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+```{r}
+###mutating state out of contributor address data
+states_king <- cleaned_king |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))
+### mutate code from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+states_king |>
+head()
+
+```
+```{r}
+###adding up contrib amounts per state 
+state_contribs_king <- states_king |>
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs)) |>
+
+glimpse()
+ ### New York Contribution amount: 534,478.44  
+
+```
+```{r}
+state_contribs_king |>
+  ### comparing in state contribution amount to out-of-state
+  mutate( contrib_location = case_when(
+      contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland",
+    )
+
+    )|>
+  ### this is where the NA problem is. unclear how to fix
+
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )
+
+```
+
+```{r}
+238527/2199015	
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Sentence 3
+
+* **Sentence text**: [Paste in sentence to engineer here]
+* **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
+
+```{r}
+# Put code to reverse engineer sentence here
+
+# Display results of code below this codeblock
+
+```
+
+### Sentence 4
+
+* **Sentence text**: [Paste in sentence to engineer here]
+* **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
+
+```{r}
+# Put code to reverse engineer sentence here
+
+# Display results of code below this codeblock
+
+```
+
+### Sentence 5
+
+* **Sentence text**: [Paste in sentence to engineer here]
+* **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
+
+```{r}
+# Put code to reverse engineer sentence here
+
+# Display results of code below this codeblock
+
+```
+
+-30-
