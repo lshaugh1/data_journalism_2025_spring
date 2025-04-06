@@ -261,43 +261,32 @@ group_by(receiving_committee)|>
 ```
 
 ```{r}
-# Create example data for donations from each county in Maryland 
-maryland_counties <- c("Allegany", "Anne Arundel", "Baltimore", "Calvert", "Caroline", 
-                       "Carroll", "Cecil", "Charles", "Dorchester", "Frederick", 
-                       "Garrett", "Harford", "Howard", "Kent", "Montgomery", 
-                       "Prince George's", "Queen Anne's", "St. Mary's", "Somerset", 
-                       "Talbot", "Washington", "Wicomico", "Worcester")
+# cleaning column names
+cleaned_franchot <- franchot |>
+clean_names()
+```
 
-# Fictional donation amounts from each county (randomly generated values for this example)
-set.seed(42)  # Setting seed for reproducibility
-county_donations <- runif(length(maryland_counties), min = 500, max = 5000)
+```{r}
+# checking total contribution amount
+cleaned_franchot |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
 
-# Create a data frame of donations from Maryland counties
-maryland_donations_df <- data.frame(County = maryland_counties, Donation_Amount = county_donations)
+```{r}
+# mutating state out of contributor address data
+states_franchot <- cleaned_franchot |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
+  
+# The mutate here is from code from ChatGPT. I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
 
-# Assume the total campaign raised $1,000,000 and 11% of that came from Maryland
-total_campaign_funds <- 1000000
-maryland_funds <- total_campaign_funds * 0.11
-
-# Calculate the remaining funds from other states
-other_states_funds <- total_campaign_funds - maryland_funds
-
-# Example data for donations from other states (fictional data)
-states <- c("California", "New York", "Texas", "Florida", "Virginia")
-state_donations <- c(300000, 250000, 150000, 100000, 50000)
-
-# Create a data frame for donations from other states
-other_states_df <- data.frame(State_Origin = states, Donation_Amount = state_donations)
-
-# Combine both dataframes (Maryland + Other States)
-combined_donations_df <- bind_rows(
-  maryland_donations_df %>% mutate(State_Origin = "Maryland"), 
-  other_states_df
-) |>
-arrange(desc(Donation_Amount))
-
-# Print the resulting data frame
-print(combined_donations_df)
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs))
 ```
 
 ```{r}
@@ -322,13 +311,35 @@ group_by(contrib_location)|>
 1303852.5/1663247.4
 ```
 
+
+```{r} 
+ ### comparing in state contribution amount to out-of-state
+  state_contribs_franchot <- states_franchot |>
+  
+    mutate(
+      contrib_location = case_when(
+    is.na(contributor_state) ~ "Overseas", #The code here from chatgpt-- how to use is.na or something similar in a case_when mutate function
+    contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland"
+  ))|>
+    
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )|>
+  adorn_totals()
+
+```
+
+```{r}
+1303852.5/1663247.4
+```
+
 ### Sentence 5
 
 * **Sentence text**: An analysis of campaign data by Capital News Service found other candidates in the Democratic primary similarly drew from the well of money from other states. Their campaigns were fattened with donations from Democratic strongholds like New York, California and Chicago, campaign finance records show.
 
-* **Analysis summary**: We were able to recreate this finding. New York California and Illinois (Chicago) are some of the top contributors for candidates like Moore, Perez and King.
-
-**Code won't run, will speak to Ryan in class to tidy this up.
+* **Analysis summary**: We were able to recreate this finding. New York, California and Illinois (Chicago) are some of the top contributors for candidates like Moore, Perez and King.
 
 
 ```{r}
@@ -336,17 +347,7 @@ colnames(states_king)
 colnames(states_moore)
 colnames(states_perez)
 
-states_king <- states_king %>%
-  rename(Contributor Address = 'Address')
-states_moore <- states_moore %>%
-  rename(Contributor Address = 'Address')
-states_perez <- states_perez %>%
-  rename(Contributor Address = 'Address')
-
-merged_data_king_moore <- full_join(states_king, states_moore, by = 'Contributor_Address')
-final_merged_data <- full_join(merged_data_king_moore, states_perez, by = 'Contributor_Address')
-head(final_merged_data)
-```
+print(states_king)
 ```
 
 
