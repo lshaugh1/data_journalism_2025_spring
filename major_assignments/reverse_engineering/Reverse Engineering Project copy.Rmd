@@ -1,0 +1,353 @@
+---
+title: "Reverse Engineering Project"
+author: "Mira, Laura ,Katelynn "
+date: "March 15, 2025"
+output:
+  html_document:
+    theme: cerulean
+    highlight: pygments
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction 
+
+In this notebook, we are reverse engineering the story, [Millions in out-of-state donations help fuel high-profile Maryland Democratic governor candidates](https://cnsmaryland.org/2022/03/03/millions-in-out-of-state-donations-help-fuel-high-profile-maryland-democratic-governor-candidates/)
+
+## Load libraries
+
+Loading required libraries for this analysis.
+
+```{r echo=FALSE, message=FALSE}
+options(scipen=999)
+library(tidyverse)
+library(lubridate)
+library(janitor)
+library(dplyr) 
+```
+
+## Load and Cleaning Data
+
+In this section, describe the source of the data, write a basic data dictionary for data you are working with, and discuss any caveats or issues you discovered working with this data. 
+
+**DATA QUESTIONS FOR RYAN** Hi, we were unable to find the contribution data for the Rush Baker campaign through the website, so instead of loading all seven candidates we only have six. 
+I'm not sure the data for all of them is even correct because some were like 'friends of candidate' and some were just normal 'candidate for governor/maryland', some even had both. Should we include both if applicable and what should we do about the Baker data? -- On second look unless we want to recreate the big yucky graph, theres no need to include schulz gansler or baker, so is it even necesary?
+
+```{r}
+# Load required data
+
+moore <- read_csv("data/wesmoore.csv")
+
+gansler <- read_csv("data/douggansler.csv")
+
+king <- read_csv("data/johnking.csv")
+
+schulz <- read_csv("data/kellyschulz.csv")
+
+perez <- read_csv("data/tomperez.csv")
+
+franchot <- read_csv("data/peterfranchot.csv")
+
+# Path to data should be loaded from folder "data" i.e. read_csv("data/name_of_data.csv")
+
+# Clean required data and prepare for analysis if needed. 
+
+```
+
+## Sentences to Engineer
+In this notebook, we are reverse engineering five sentences from the story.
+
+### Sentence 1
+
+* **Sentence text**: Moore, a U.S. Army veteran and bestselling author, built a campaign war chest that included over $2.3 million in out-of-state contributions. 
+* **Analysis summary**: We were able to confirm the finding. Out of Wes Moore's 4,127,418 dollars in campaign funding, 2,387,822.72 dollars came from out-of-state donations. Less than 2 million was from Maryland donations, which the story does mention: "Moore raised over $1.7 million in Maryland, the highest total of any candidate," so we replicated that finding too.
+
+```{r}
+#cleaning column names
+cleaned_moore <- moore |>
+clean_names()
+```
+
+
+```{r}
+#checking total contrib amount
+cleaned_moore |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+
+
+```{r}
+#mutating state out of contributor address data
+
+states_moore <- cleaned_moore |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
+  
+# The mutate code here is from ChatGPT. I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+
+# Here I sorted the state by top contributions per state
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs))
+```
+
+```{r}
+ ### Comparing in-state contribution amounts to out-of-state/overseas contribution amounts
+  state_contribs_moore <- states_moore|>
+  
+    mutate(
+      contrib_location = case_when(
+    is.na(contributor_state) ~ "Overseas", #Code here is from from ChatGPT. I asked how to use 'is.na' or something similar in a case_when mutate function
+    contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland"
+  ))|>
+    
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )|>
+  adorn_totals()
+
+
+```
+
+
+### Sentence 2
+
+* **Sentence text**: John B. King, former secretary of Education under President Barack Obama, raised $2.2 million in campaign funding last year. Only 11%, just under $240,000, came from Maryland donors. King raised over $534,000 in New York alone.
+
+
+* **Analysis summary**: Yes, we were able to replicate this finding. King raised exactly 2,199,015 dollars for his campaign. 534478.44 of that came from New York state. Only 238,527 dollars came from Maryland. That is about 11% of his total.
+
+```{r}
+#cleaning column names
+cleaned_king <- king |>
+clean_names()
+```
+
+
+```{r}
+#checking total contrib amount
+cleaned_king |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+
+
+```{r}
+#mutating state out of contributor address data
+states_king <- cleaned_king |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
+
+# The mutate code here is from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs))
+```
+
+```{r}
+ ### comparing in-state contribution amount to out-of-state
+  state_contribs_king <- states_king|>
+  
+    mutate(
+      contrib_location = case_when(
+    is.na(contributor_state) ~ "Overseas", #This code is from ChatGPT. I asked how to use is.na or something similar in a case_when mutate function
+    contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland"
+  ))|>
+    
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )|>
+  adorn_totals()
+
+
+```
+```{r}
+238527/2199015	
+```
+
+### Sentence 3
+
+* **Sentence text**: Tom Perez, a former leader of the Democratic National Committee, raised nearly $1.7 million in donations from outside Maryland.
+* **Analysis summary**: Yes, we were about to replicate this finding. 1,695,893.20 dollars of Perez's campaign contributions came from out of state. 
+
+
+```{r}
+###cleaning column names
+cleaned_perez <- perez |>
+clean_names()
+```
+
+```{r}
+#checking total contribution amount
+cleaned_perez |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+
+```{r}
+#mutating state out of contributor address data
+
+states_perez <- cleaned_perez |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
+
+### This mutate code is from ChatGPT. I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse."
+
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs))
+```
+
+```{r}
+ ### comparing in state contribution amount to out-of-state
+  state_contribs_perez <- states_perez|>
+  
+    mutate(
+      contrib_location = case_when(
+    is.na(contributor_state) ~ "Overseas", #code from chatgpt-- how to use is.na or something similar in a case_when mutate function
+    contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland"
+  ))|>
+    
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )|>
+  adorn_totals()
+
+```
+
+
+### Sentence 4
+
+* **Sentence text**: King’s campaign, which raised just under 11% of its money from Maryland, said it received donations from every county in the state, and said the support it received from other states was indicative of voters looking for a candidate with leadership on education issues.
+
+* **Analysis summary**: All code below was generated via ChatGPT, hence the fictional data. Need further clarification on filling in our data, will chat with Ryan in class. 
+
+```{r}
+# cleaning column names
+cleaned_king <- king |>
+clean_names()
+```
+
+```{r}
+# checking total contribution amount
+cleaned_king|>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+
+```{r}
+# Create example data for donations from each county in Maryland 
+maryland_counties <- c("Allegany", "Anne Arundel", "Baltimore", "Calvert", "Caroline", 
+                       "Carroll", "Cecil", "Charles", "Dorchester", "Frederick", 
+                       "Garrett", "Harford", "Howard", "Kent", "Montgomery", 
+                       "Prince George's", "Queen Anne's", "St. Mary's", "Somerset", 
+                       "Talbot", "Washington", "Wicomico", "Worcester")
+
+# Fictional donation amounts from each county (randomly generated values for this example)
+set.seed(42)  # Setting seed for reproducibility
+county_donations <- runif(length(maryland_counties), min = 500, max = 5000)
+
+# Create a data frame of donations from Maryland counties
+maryland_donations_df <- data.frame(County = maryland_counties, Donation_Amount = county_donations)
+
+# Assume the total campaign raised $1,000,000 and 11% of that came from Maryland
+total_campaign_funds <- 1000000
+maryland_funds <- total_campaign_funds * 0.11
+
+# Calculate the remaining funds from other states
+other_states_funds <- total_campaign_funds - maryland_funds
+
+# Example data for donations from other states (fictional data)
+states <- c("California", "New York", "Texas", "Florida", "Virginia")
+state_donations <- c(300000, 250000, 150000, 100000, 50000)
+
+# Create a data frame for donations from other states
+other_states_df <- data.frame(State_Origin = states, Donation_Amount = state_donations)
+
+# Combine both dataframes (Maryland + Other States)
+combined_donations_df <- bind_rows(
+  maryland_donations_df %>% mutate(State_Origin = "Maryland"), 
+  other_states_df
+) |>
+arrange(desc(Donation_Amount))
+
+# Print the resulting data frame
+print(combined_donations_df)
+```
+
+```{r}
+ ### comparing in state contribution amount to out-of-state
+  state_contribs_franchot <- states_franchot|>
+  
+    mutate(
+      contrib_location = case_when(
+    is.na(contributor_state) ~ "Overseas", #The code here from chatgpt-- how to use is.na or something similar in a case_when mutate function
+    contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland"
+  ))|>
+    
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )|>
+  adorn_totals()
+```
+
+```{r}
+1303852.5/1663247.4
+```
+
+### Sentence 5
+
+* **Sentence text**: An analysis of campaign data by Capital News Service found other candidates in the Democratic primary similarly drew from the well of money from other states. Their campaigns were fattened with donations from Democratic strongholds like New York, California and Chicago, campaign finance records show.
+
+* **Analysis summary**: We were able to recreate this finding. New York California and Illinois (Chicago) are some of the top contributors for candidates like Moore, Perez and King.
+
+**Code won't run, will speak to Ryan in class to tidy this up.
+
+
+```{r}
+colnames(states_king)
+colnames(states_moore)
+colnames(states_perez)
+
+states_king <- states_king %>%
+  rename(Contributor Address = 'Address')
+states_moore <- states_moore %>%
+  rename(Contributor Address = 'Address')
+states_perez <- states_perez %>%
+  rename(Contributor Address = 'Address')
+
+merged_data_king_moore <- full_join(states_king, states_moore, by = 'Contributor_Address')
+final_merged_data <- full_join(merged_data_king_moore, states_perez, by = 'Contributor_Address')
+head(final_merged_data)
+```
+```
+
+
+-30-
