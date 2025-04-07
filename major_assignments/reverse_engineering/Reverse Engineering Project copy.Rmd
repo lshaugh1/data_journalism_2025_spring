@@ -30,6 +30,7 @@ library(tidyverse)
 library(lubridate)
 library(janitor)
 library(dplyr) 
+library(readxl)
 ```
 
 ## Load and Cleaning Data
@@ -99,6 +100,9 @@ group_by(contributor_state)|>
     state_contribs = sum(contribution_amount)
   )|>
   arrange(desc(state_contribs))
+
+
+print(states_moore)
 ```
 
 ```{r}
@@ -118,7 +122,7 @@ group_by(contrib_location)|>
   )|>
   adorn_totals()
 
-
+print(state_contribs_moore)
 ```
 
 
@@ -158,10 +162,13 @@ group_by(contributor_state)|>
     state_contribs = sum(contribution_amount)
   )|>
   arrange(desc(state_contribs))
+
+
+print(states_king)
 ```
 
 ```{r}
- ### comparing in-state contribution amount to out-of-state
+ ### comparing in-state contribution amount to out-of-state with raw numbers and percentages
   state_contribs_king <- states_king|>
   
     mutate(
@@ -175,13 +182,16 @@ group_by(contrib_location)|>
   summarise(
    total_contribution = sum(state_contribs)
   )|>
+   mutate(
+    percent_of_total = total_contribution / sum(total_contribution) * 100
+  ) |>
   adorn_totals()
 
+print(state_contribs_king)
+
 
 ```
-```{r}
-238527/2199015	
-```
+
 
 ### Sentence 3
 
@@ -217,6 +227,8 @@ group_by(contributor_state)|>
     state_contribs = sum(contribution_amount)
   )|>
   arrange(desc(state_contribs))
+
+print(states_perez)
 ```
 
 ```{r}
@@ -236,6 +248,7 @@ group_by(contrib_location)|>
   )|>
   adorn_totals()
 
+print(state_contribs_perez)
 ```
 
 
@@ -243,7 +256,7 @@ group_by(contrib_location)|>
 
 * **Sentence text**: King’s campaign, which raised just under 11% of its money from Maryland, said it received donations from every county in the state, and said the support it received from other states was indicative of voters looking for a candidate with leadership on education issues.
 
-* **Analysis summary**: All code below was generated via ChatGPT, hence the fictional data. Need further clarification on filling in our data, will chat with Ryan in class. 
+* **Analysis summary**: We were somewhat able to verify this analysis. After importing a dataset with Maryland zipcodes by county, we wrote code to extract the zipcodes from each contribution and assign it to a county. The result is a dataset with 23 rows (but there are 24 counties in Maryland, including Baltimore City), with one row with a county called NA. St. Mary's and Somerset counties are missing from this list. 
 
 ```{r}
 # cleaning column names
@@ -258,6 +271,50 @@ group_by(receiving_committee)|>
   summarise(
     total_contrib_amount = sum(contribution_amount)
   )
+```
+
+```{r}
+# importing zipcode data to compare addresses to verify that he received contributions from each county in MD
+zip_county <- read_excel("data/ZIP_COUNTY_122024.xlsx")
+
+# filtering for just MD zipcodes
+md_zip_county <- zip_county |> 
+  filter(USPS_ZIP_PREF_STATE == "MD")
+
+# make sure state abbreviation exists for filtering
+cleaned_king <- cleaned_king |>
+  mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}\\b"))
+
+# county FIPS-to-name lookup table
+md_fips_lookup <- tibble::tibble(
+  COUNTY = c(
+    1, 3, 5, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29,
+    31, 33, 35, 37, 39, 41, 43, 45, 47, 510
+  ),
+  county_name = c(
+    "Allegany", "Anne Arundel", "Baltimore City", "Calvert", "Caroline",
+    "Carroll", "Cecil", "Charles", "Dorchester", "Frederick", "Garrett",
+    "Harford", "Howard", "Kent", "Montgomery", "Prince George's", "Queen Anne's",
+    "St. Mary's", "Somerset", "Talbot", "Washington", "Wicomico", "Worcester", "Baltimore"
+  )
+)
+
+# ensure both sides of the join use the same type (character)
+md_donations_by_county <- md_donations_by_county |> 
+  mutate(county_fips = substr(COUNTY, 3, 5))  # extract last 3 digits
+
+md_fips_lookup <- md_fips_lookup |> 
+  mutate(county_fips = stringr::str_pad(COUNTY, 3, pad = "0"))  # pad with zeros
+
+# now join on county_fips
+md_donations_named <- md_donations_by_county |>
+  left_join(md_fips_lookup, by = "county_fips") |>
+  select(county_name, total_donations, num_contributors) |>
+  arrange(desc(total_donations))
+
+print(md_donations_named)
+
+
 ```
 
 ```{r}
@@ -287,6 +344,8 @@ group_by(contributor_state)|>
     state_contribs = sum(contribution_amount)
   )|>
   arrange(desc(state_contribs))
+
+print(states_franchot)
 ```
 
 ```{r}
@@ -305,10 +364,6 @@ group_by(contrib_location)|>
    total_contribution = sum(state_contribs)
   )|>
   adorn_totals()
-```
-
-```{r}
-1303852.5/1663247.4
 ```
 
 
@@ -331,9 +386,6 @@ group_by(contrib_location)|>
 
 ```
 
-```{r}
-1303852.5/1663247.4
-```
 
 ### Sentence 5
 
@@ -348,6 +400,8 @@ colnames(states_moore)
 colnames(states_perez)
 
 print(states_king)
+print(states_moore)
+print(states_perez)
 ```
 
 
