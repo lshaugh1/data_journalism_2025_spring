@@ -1,0 +1,181 @@
+---
+title: "R Notebook"
+output: html_notebook
+authors: Yugo, Erin and Laura
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(tidyselect)
+library(janitor)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+
+**Week 2 Analysis**
+The early voting dataset has 168 rows and 21 columns, showing early votes cast by county and party for Maryland’s 2024 primary. There are no missing values, but to answer some countywide questions, we had to combine the party-level results. The dataset only covers early voting across an eight-day period — it doesn’t include mail-in ballots, Election Day voting, or provisional ballots. That limits how much we can say about overall turnout or voting method trends without pulling in more data.
+
+Column names like party (DEM, REP, LIB, NLM, OTH) identify different political parties, though the file doesn’t define them directly. We matched these using Maryland’s election documentation. The eligible_actives column shows the number of registered active voters, but there’s no demographic breakdown. Overall, the data works well for tracking early voting by county but doesn’t stand alone for broader turnout or mail-in ballot analysis.
+
+
+The mail-in ballots dataset has 482 rows and 15 columns, tracking ballots sent, received, and accepted across counties and districts in Maryland's 2024 primary. There are minor missing values: three missing county and district names, and one missing total in the total_accepted column. To answer countywide questions, we would need to combine rows by county, since ballots are also broken down by voting district.
+
+The dataset focuses only on mail-in ballots. It does not include early voting, Election Day turnout, or provisional ballots. This limits its ability to explain full voter participation or ballot method choices without additional datasets.
+
+Column names like dem_sent, rep_sent, oth_sent, total_sent, and similar fields for received and accepted distinguish ballots by party and status. These fields are clear, though some categories (like "OTH") required outside election documentation to fully define. Overall, the dataset is strong for analyzing mail ballot flows, but incomplete for full turnout analysis.
+
+**Week 2 code**
+#loading datasets
+```{r}
+
+early_voting_turnout <- read.csv("data/early_voting.csv")
+mail_in_ballots <- read.csv("data/mail_in_ballots.csv")
+
+```
+
+#cleaning dataset ONE via coding to fix column names, then exporting the dataset to excel to add missing variables (county names)
+```{r}
+
+early_voting_turnout <- early_voting_turnout |>
+  clean_names() |>
+  mutate(across(starts_with("day"), ~gsub(",", "", .) %>% as.numeric)) |>
+  mutate(across(starts_with("x_"), ~gsub("%", "", .))) |>
+  rename(perc_day1 = x_day1,
+         perc_day2 = x_day2,
+         perc_day3 = x_day3,
+         perc_day4 = x_day4,
+         perc_day5 = x_day5,
+         perc_day6 = x_day6,
+         perc_day7 = x_day7,
+         perc_day8 = x_day8,
+         perc_total = x_total)
+  
+ 
+```
+
+##oops more cleaning
+```{r}
+
+early_voting_turnout <- early_voting_turnout |>
+  mutate(across(starts_with("perc_"), ~gsub("%", "", .))) |>
+  mutate(across(starts_with("total"), ~gsub(",", "", .))) |>
+  mutate(total = as.numeric(total)) |>
+  mutate(eligible_actives = str_remove(eligible_actives, ",")) |>
+  mutate(eligible_actives = as.numeric(eligible_actives))
+
+```
+
+```{r}
+
+write_csv(early_voting_turnout, "data/early_voting.csv", col_names = TRUE)
+
+```
+
+##final clean data reupload
+```{r}
+
+clean_early_voting_turnout <- read_csv("data/clean_early_voting.csv")
+
+```
+
+##cleaning of dataset TWO
+```{r}
+
+mail_in_ballots <- mail_in_ballots |>
+  clean_names() |>
+  mutate(county_name = str_remove(county_name, "'")) |>
+  mutate(county_name = str_to_lower(county_name)) |>
+  mutate(district = str_to_lower(district)) |>
+  mutate(category = str_to_lower(category)) |>
+  mutate(dem_sent = as.numeric(dem_sent)) |>
+  mutate(dem_received = as.numeric(dem_received)) |>
+  mutate(dem_accepted = as.numeric(dem_accepted)) |>
+  mutate(rep_sent = as.numeric(rep_sent)) |>
+  mutate(rep_received = as.numeric(rep_received)) |>
+  mutate(rep_accepted = as.numeric(rep_accepted)) |>
+  mutate(oth_sent = as.numeric(oth_sent)) |>
+  mutate(oth_received = as.numeric(oth_received)) |>
+  mutate(oth_accepted = as.numeric(oth_accepted)) |>
+  mutate(total_sent = as.numeric(total_sent)) |>
+  mutate(total_received = as.numeric(total_received)) |>
+  mutate(total_accepted = as.numeric(total_accepted))
+  
+
+```
+
+##writing the changes to the dataset file, then exporting to excel to get rid of empty rows
+```{r}
+
+write_csv(mail_in_ballots, "data/mail_in_ballots.csv", col_names = TRUE)
+
+```
+
+```{r}
+
+clean_mail_in_ballots <- read_csv("data/clean_mail_in_ballots.csv")
+
+```
+
+**Week 3 Code**
+
+Question #1: Which counties had the highest and lowest early voting turnout in 2024?
+```{r}
+# Read in the early voting data
+early_voting <- read_csv("data/clean_early_voting.csv") %>%
+  clean_names() 
+
+early_turnout <- early_voting |>
+  group_by(county) |>
+  summarise(
+    total_early_votes = sum(total, na.rm = TRUE),
+    eligible_voters = first(eligible_actives)  
+  ) |>
+  mutate(turnout_rate = total_early_votes / eligible_voters) |>
+  arrange(desc(turnout_rate))
+
+highest_turnout <- early_turnout |> slice(1)
+lowest_turnout <- early_turnout |> slice(n())
+
+print("County with highest early voting turnout:")
+print(highest_turnout)
+
+print("County with lowest early voting turnout:")
+print(lowest_turnout)
+
+```
+
+Question #2: How many people voted by mail versus in person in the 2024 election?
+```{r}
+
+```
+
+Question #3: Which counties had the highest percentage of rejected mail-in ballots?
+```{r}
+
+```
+
+Question #4: By what percent has overall voter turnout increased or decreased since 2020?
+```{r}
+
+```
+
+Question #5: Which counties relied most heavily on early voting in 2024?
+```{r}
+
+```
+
