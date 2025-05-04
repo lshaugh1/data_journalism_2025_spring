@@ -92,7 +92,7 @@ ggplot(md_map_data) +
 
 Also answer this: is a map the best way to present this data? What else could you make that might convey more information?
 
-**A2.** Trump's county-level performance was lower than Hogan in basically every county. A map displays trends across geographical boundaries, but a bar chart might show the seismic, proportional differences better.   
+**A2.** This map shows the difference between Trump’s and Hogan’s 2024 vote shares by Maryland county. Hogan outperformed Trump in nearly every county, especially in suburban and urban areas. Only a few rural counties showed higher support for Trump. While the map highlights geographic trends, it doesn’t reflect population size. A bar chart could better show which counties had the biggest vote share gaps.
 
 ```{r}
 
@@ -144,7 +144,8 @@ ggplot(map_ready) +
 
 **Q3** Make another map showing the difference between Larry Hogan's county-level performance this year and from his governor race in 2018, using percentages to compare the two as you did in Q2. You can use the dataframe you initially loaded for Q1, and you'll need to load the 2018 governor results in the data folder and join them to it before proceeding. Are there any counties where Hogan did better this year? How would you describe the map showing the difference?
 
-**A3**
+**A3** This map shows the change in Larry Hogan’s county-level support between his 2018 governor reelection and his 2024 Senate campaign. Each county is colored by the percentage point difference in his vote share: red means he lost support, while blue shows gains in support. Nearly all counties are shaded red, meaning Hogan performed worse in 2024 than in 2018. The steepest declines appeared in Democratic-leaning areas, but even a couple swing counties saw drops.
+
 
 ```{r}
 
@@ -193,7 +194,7 @@ ggplot(map_data) +
 
 **Q4.** Choose your own map adventure! In the data folder I've included Maryland county-level results for the abortion rights amendment vote this year, plus the 2020 presidential results by county and 2022 governor's results by county. Using one of those and at least one other contest for comparison, make a county-level map showing what you think is the most interesting aspect of that data, and describe the results in terms of a possible story. You can bring in other data, such as Census information, if you like.
 
-**A4.**
+**A4.** I chose to compare the county-level results of Maryland’s 2024 abortion rights amendment vote with the 2022 gubernatorial results, specifically focusing on Republican Governor Larry Hogan’s vote share. My map visualizes the difference in percentage points between Hogan’s past support and support for the abortion rights amendment across Maryland counties. Counties shaded red indicate where Hogan received more support than the amendment; blue counties show where the amendment outperformed Hogan.This comparison tells an interesting story. Hogan is known as a moderate Republican, and yet in many counties, even some that backed him strongly, abortion rights had even broader support. That suggests that the abortion amendment drew support not just from Democrats, but also from conservative voters. For example, several rural counties that backed Hogan also supported the amendment, indicating a potential shift in voter priorities when it comes to issues like abortion rights.
 
 ```{r}
 #I used ChatGPT to help with this one #slay
